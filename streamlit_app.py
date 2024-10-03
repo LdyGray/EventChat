@@ -4,9 +4,77 @@ from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 from langchain_core.runnables import RunnableBranch
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.chat_message_histories import (
+    StreamlitChatMessageHistory,
+)
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_openai import ChatOpenAI
+from gcsa.event import Event
+from gcsa.google_calendar import GoogleCalendar
+from gcsa.recurrence import Recurrence, DAILY, SU, SA
+
+from beautiful_date import Jan, Apr
 import os
 
-llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
+llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"]
+
+
+calendar = GoogleCalendar('grayh@bu.edu')
+event = Event(
+    'Breakfast',
+    start=(1 / Jan / 2019)[9:00],
+    recurrence=[
+        Recurrence.rule(freq=DAILY),
+        Recurrence.exclude_rule(by_week_day=[SU, SA]),
+        Recurrence.exclude_times([
+            (19 / Apr / 2019)[9:00],
+            (22 / Apr / 2019)[9:00]
+        ])
+    ],
+    minutes_before_email_reminder=50
+)
+
+calendar.add_event(event)
+
+for event in calendar:
+    print(event)
+
+# # Optionally, specify your own session_state key for storing messages
+msgs = StreamlitChatMessageHistory(key="special_app_key")
+
+if len(msgs.messages) == 0:
+    msgs.add_ai_message("How can I help you?")
+
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", "You are an AI personal assistant helping a human manage their calendar."),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{question}"),
+    ]
+)
+
+chain = prompt | llm
+
+chain_with_history = RunnableWithMessageHistory(
+    chain,
+    lambda session_id: msgs,  # Always return the instance created earlier
+    input_messages_key="question",
+    history_messages_key="history",
+)
+
+
+for msg in msgs.messages:
+    st.chat_message(msg.type).write(msg.content)
+
+if prompt := st.chat_input():
+    st.chat_message("human").write(prompt)
+
+    # As usual, new messages are added to StreamlitChatMessageHistory when the Chain is called.
+    config = {"configurable": {"session_id": "any"}}
+    response = chain_with_history.invoke({"question": prompt}, config)
+    st.chat_message("ai").write(response.content)
+
 
 
 # Function to authenticate with Google Calendar API
@@ -93,14 +161,14 @@ Content:
 
 ### Put all the chains together
 branch = RunnableBranch(
-    (lambda x: "Add" in x["issue_type"], positive_chain),
-    (lambda x: "Remove" in x["issue_type"], nofault_chain),
+    (lambda x: "Add" in x["issue_type"], add_chain),
+    (lambda x: "Remove" in x["issue_type"], remove_chain),
     lambda x: fault_chain,
 )
 full_chain = {"issue_type": issue_type_chain, "content": lambda x: x["content"]} | branch
 
 # streamlit app layout
-st.title("Airline Experience Feedback")
+st.title("Calendar Update Bot")
 prompt = st.text_input("Use me to update your calendar", "Add an event, remove an event, ask for today's schedule")
 
 # Run the chain
