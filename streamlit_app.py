@@ -14,11 +14,22 @@ import os
 
 llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
 
+# Just following this: https://python.langchain.com/docs/integrations/memory/streamlit_chat_message_history/
+import streamlit as st
+from langchain_community.chat_message_histories import (
+    StreamlitChatMessageHistory,
+)
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_openai import ChatOpenAI
+
+
 # # Optionally, specify your own session_state key for storing messages
 msgs = StreamlitChatMessageHistory(key="special_app_key")
 
 if len(msgs.messages) == 0:
     msgs.add_ai_message("How can I help you?")
+
 
 prompt = ChatPromptTemplate.from_messages(
     [
@@ -28,6 +39,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
+llm = ChatOpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 chain = prompt | llm
 
 chain_with_history = RunnableWithMessageHistory(
@@ -36,6 +48,7 @@ chain_with_history = RunnableWithMessageHistory(
     input_messages_key="question",
     history_messages_key="history",
 )
+
 
 import streamlit as st
 
