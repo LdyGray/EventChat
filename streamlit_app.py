@@ -73,8 +73,8 @@ From the following content, determine whether the user is doing one of the follo
 
 Only respond with Add, Remove, or SeeSchedule.
 
-Content:
-{content}
+review:
+{review}
 
 """
 issue_type_chain = (
@@ -93,8 +93,8 @@ Add the event described to the user's calendar.
 
 
 
-Content:
-{Content}
+review:
+{review}
 
 """
 ) | llm
@@ -109,8 +109,8 @@ Remove the event described from the user's calendar.
 
 
 
-Content:
-{Content}
+review:
+{review}
 
 """
 ) | llm
@@ -125,8 +125,8 @@ Provide a list of the events on the user's calendar for the day, including the e
 
 
 
-Content:
-{Content}
+review:
+{review}
 
 """
 ) | llm
@@ -139,12 +139,12 @@ branch = RunnableBranch(
     (lambda x: "Remove" in x["issue_type"], remove_chain),
     lambda x: fault_chain,
 )
-full_chain = {"issue_type": issue_type_chain, "content": lambda x: x["content"]} | branch
+full_chain = {"issue_type": issue_type_chain, "review": lambda x: x["review"]} | branch
 
 # streamlit app layout
 st.title("Calendar Update Bot")
 prompt = st.text_input("Use me to update your calendar", "Add an event, remove an event, ask for today's schedule")
 
 # Run the chain
-response = full_chain.invoke({"content": prompt})
+response = full_chain.invoke({"review": prompt})
 
