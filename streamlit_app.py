@@ -1,56 +1,108 @@
 import streamlit as st
 from openai import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+from langchain_core.runnables import RunnableBranch
+from langchain_core.output_parsers import StrOutputParser
+import os
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
+llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
+
+
+# Function to authenticate with Google Calendar API
+def authenticate_google_calendar():
+    # Load the credentials from Streamlit secrets
+    credentials_info = st.secrets["gcp_service_account"]
+    
+    creds = service_account.Credentials.from_service_account_info(
+        credentials_info
+    )
+    
+    # Create the Google Calendar service
+    calendar_service = build('calendar', 'v3', credentials=creds)
+    return calendar_service
+
+### Create the decision-making chain
+issue_template = """You are a personal assistant.
+From the following content, determine whether the user is doing one of the following three things:
+* Add: The user would like to add an event to their calendar.
+* Remove: The user would like to remove an event from their calendar.
+* SeeSchedule: The user would like to see a list of the events on their calendar for today.
+
+Only respond with Add, Remove, or SeeSchedule.
+
+Content:
+{content}
+
+"""
+issue_type_chain = (
+    PromptTemplate.from_template(issue_template)
+    | llm
+    | StrOutputParser()
 )
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+#### Case 1: Add
+positive_chain = PromptTemplate.from_template(
+       """You are a personal assistant. 
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+Add the event described to the user's calendar.
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+Content:
+{Content}
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+"""
+) | llm
+
+
+#### Case 2: Remove
+nofault_chain = PromptTemplate.from_template(
+    """You are a personal assistant. 
+
+Remove the event described from the user's calendar.
+
+
+
+
+Content:
+{Content}
+
+"""
+) | llm
+
+
+#### Case 3: SeeSchedule
+fault_chain = PromptTemplate.from_template(
+    """You are a personal assistant. 
+
+Provide a list of the events on the user's calendar for the day, including the event title and start and end time.
+
+
+
+
+Content:
+{Content}
+
+"""
+) | llm
+
+
+
+### Put all the chains together
+branch = RunnableBranch(
+    (lambda x: "Add" in x["issue_type"], positive_chain),
+    (lambda x: "Remove" in x["issue_type"], nofault_chain),
+    lambda x: fault_chain,
+)
+full_chain = {"issue_type": issue_type_chain, "content": lambda x: x["content"]} | branch
+
+# streamlit app layout
+st.title("Airline Experience Feedback")
+prompt = st.text_input("Use me to update your calendar", "Add an event, remove an event, ask for today's schedule")
+
+# Run the chain
+response = full_chain.invoke({"content": prompt})
+
