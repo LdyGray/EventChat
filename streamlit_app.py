@@ -34,7 +34,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-llm = ChatOpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+llm = ChatOpenAI(api_key=st.secrets["MyOpenAIKey2"])
 chain = prompt | llm
 
 chain_with_history = RunnableWithMessageHistory(
