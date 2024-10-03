@@ -137,8 +137,8 @@ branch = RunnableBranch(
 full_chain = {"issue_type": issue_type_chain, "review": lambda x: x["review"]} | branch
 
 # streamlit app layout
-st.title("Airline Experience Feedback")
-prompt = st.text_input("Share with us your experience of the latest trip", "My trip was awesome")
+st.title("Calendar Management App")
+prompt = st.text_input("How can I help you?", "Add an event, remove an event, see your schedule for the day")
 
 # Run the chain
 response = full_chain.invoke({"review": prompt})
