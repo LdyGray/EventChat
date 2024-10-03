@@ -4,12 +4,6 @@ from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI
 from langchain_core.runnables import RunnableBranch
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.chat_message_histories import (
-    StreamlitChatMessageHistory,
-)
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_openai import ChatOpenAI
 import os
 
 llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
@@ -137,13 +131,13 @@ review:
 branch = RunnableBranch(
     (lambda x: "Add" in x["issue_type"], add_chain),
     (lambda x: "Remove" in x["issue_type"], remove_chain),
-    lambda x: fault_chain,
+    lambda x: SeeSchedule_chain,
 )
 full_chain = {"issue_type": issue_type_chain, "review": lambda x: x["review"]} | branch
 
 # streamlit app layout
-st.title("Calendar Update Bot")
-prompt = st.text_input("Use me to update your calendar", "Add an event, remove an event, ask for today's schedule")
+st.title("Airline Experience Feedback")
+prompt = st.text_input("Share with us your experience of the latest trip", "My trip was awesome")
 
 # Run the chain
 response = full_chain.invoke({"review": prompt})
