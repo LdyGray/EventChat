@@ -80,7 +80,7 @@ issue_type_chain = (
 
 
 #### Case 1: Add
-positive_chain = PromptTemplate.from_template(
+add_chain = PromptTemplate.from_template(
        """You are a personal assistant. 
 
 Add the event described to the user's calendar.
@@ -96,7 +96,7 @@ review:
 
 
 #### Case 2: Remove
-nofault_chain = PromptTemplate.from_template(
+remove_chain = PromptTemplate.from_template(
     """You are a personal assistant. 
 
 Remove the event described from the user's calendar.
@@ -112,7 +112,7 @@ review:
 
 
 #### Case 3: SeeSchedule
-fault_chain = PromptTemplate.from_template(
+SeeSchedule = PromptTemplate.from_template(
     """You are a personal assistant. 
 
 Provide a list of the events on the user's calendar for the day, including the event title and start and end time.
