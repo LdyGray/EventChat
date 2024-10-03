@@ -7,6 +7,7 @@ from langchain_core.output_parsers import StrOutputParser
 import os
 
 llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
+key = st.secrets["MyOpenAIKey2"]
 
 # Just following this: https://python.langchain.com/docs/integrations/memory/streamlit_chat_message_history/
 import streamlit as st
