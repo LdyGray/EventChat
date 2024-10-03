@@ -17,7 +17,7 @@ from gcsa.recurrence import Recurrence, DAILY, SU, SA
 from beautiful_date import Jan, Apr
 import os
 
-llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"]
+llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
 
 
 calendar = GoogleCalendar('grayh@bu.edu')
