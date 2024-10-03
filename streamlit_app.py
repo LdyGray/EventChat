@@ -10,11 +10,6 @@ from langchain_community.chat_message_histories import (
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
-from gcsa.event import Event
-from gcsa.google_calendar import GoogleCalendar
-from gcsa.recurrence import Recurrence, DAILY, SU, SA
-
-from beautiful_date import Jan, Apr
 import os
 
 llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
@@ -55,20 +50,6 @@ if prompt := st.chat_input():
     response = chain_with_history.invoke({"question": prompt}, config)
     st.chat_message("ai").write(response.content)
 
-
-
-# Function to authenticate with Google Calendar API
-def authenticate_google_calendar():
-    # Load the credentials from Streamlit secrets
-    credentials_info = st.secrets["gcp_service_account"]
-    
-    creds = service_account.Credentials.from_service_account_info(
-        credentials_info
-    )
-    
-    # Create the Google Calendar service
-    calendar_service = build('calendar', 'v3', credentials=creds)
-    return calendar_service
 
 ### Create the decision-making chain
 issue_template = """You are a personal assistant.
