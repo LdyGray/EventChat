@@ -19,27 +19,6 @@ import os
 
 llm = OpenAI(openai_api_key=st.secrets["MyOpenAIKey2"])
 
-
-calendar = GoogleCalendar('grayh@bu.edu')
-event = Event(
-    'Breakfast',
-    start=(1 / Jan / 2019)[9:00],
-    recurrence=[
-        Recurrence.rule(freq=DAILY),
-        Recurrence.exclude_rule(by_week_day=[SU, SA]),
-        Recurrence.exclude_times([
-            (19 / Apr / 2019)[9:00],
-            (22 / Apr / 2019)[9:00]
-        ])
-    ],
-    minutes_before_email_reminder=50
-)
-
-calendar.add_event(event)
-
-for event in calendar:
-    print(event)
-
 # # Optionally, specify your own session_state key for storing messages
 msgs = StreamlitChatMessageHistory(key="special_app_key")
 
@@ -63,6 +42,7 @@ chain_with_history = RunnableWithMessageHistory(
     history_messages_key="history",
 )
 
+import streamlit as st
 
 for msg in msgs.messages:
     st.chat_message(msg.type).write(msg.content)
